@@ -30,7 +30,29 @@ if [ -z ${I2C_RTC_ADDRESS+x} ]; then
 	readonly I2C_CONF_ADJ_VIN=17
 	readonly I2C_CONF_ADJ_VOUT=18
 	readonly I2C_CONF_ADJ_IOUT=19
+	
+	readonly HALT_PIN=4    # halt by GPIO-4 (BCM naming)
+	readonly SYSUP_PIN=17  # output SYS_UP signal on GPIO-17 (BCM naming)
 fi
+
+one_wire_confliction()
+{
+	if [[ $HALT_PIN -eq 4 ]]; then
+		if grep -qe "^\s*dtoverlay=w1-gpio\s*$" /boot/config.txt; then
+	  	return 0
+		fi
+		if grep -qe "^\s*dtoverlay=w1-gpio-pullup\s*$" /boot/config.txt; then
+	  	return 0
+		fi
+	fi 
+  if grep -qe "^\s*dtoverlay=w1-gpio,gpiopin=$HALT_PIN\s*$" /boot/config.txt; then
+  	return 0
+	fi
+	if grep -qe "^\s*dtoverlay=w1-gpio-pullup,gpiopin=$HALT_PIN\s*$" /boot/config.txt; then
+  	return 0
+	fi
+	return 1
+}
 
 has_internet()
 {

@@ -10,18 +10,29 @@ cur_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # utilities
 . "$cur_dir/utilities.sh"
 
-log 'Witty Pi daemon (v3.00) is started.'
+log 'Witty Pi daemon (v3.10) is started.'
 
-# halt by GPIO-4 (BCM naming)
-halt_pin=4
+# log Raspberry Pi model
+pi_model=$(cat /proc/device-tree/model)
+log "Running on $pi_model"
+
+# log wiringPi version number
+wp_ver=$(gpio -v | sed -n '1 s/.*\([0-9]\+\.[0-9]\+\).*/\1/p')
+log "Wiring Pi version: $wp_ver"
+
+# check 1-wire confliction
+if one_wire_confliction ; then
+	log "Confliction: 1-Wire interface is enabled on GPIO-$HALT_PIN, which is also used by Witty Pi."
+	log 'Witty Pi daemon can not work until you solve this confliction and reboot Raspberry Pi.'
+	exit
+fi
 
 # make sure the halt pin is input with internal pull up
-gpio -g mode $halt_pin up
-gpio -g mode $halt_pin in
+gpio -g mode $HALT_PIN up
+gpio -g mode $HALT_PIN in
 
-# output SYS_UP signal on GPIO-17 (BCM naming)
-sysup_pin=17
-gpio -g mode $sysup_pin out
+# make sure the sysup in is in output mode
+gpio -g mode $SYSUP_PIN out
 
 # wait for RTC ready
 sleep 2
@@ -52,10 +63,10 @@ if [ $has_mc == 0 ] ; then
 fi
 
 # indicates system is up
-log "Send out the SYS_UP signal via GPIO-$sysup_pin pin."
-gpio -g write $sysup_pin 1
+log "Send out the SYS_UP signal via GPIO-$SYSUP_PIN pin."
+gpio -g write $SYSUP_PIN 1
 sleep 0.5
-gpio -g write $sysup_pin 0
+gpio -g write $SYSUP_PIN 0
 
 # check and clear alarm flags
 if [ $has_rtc == 0 ] ; then
@@ -70,7 +81,7 @@ if [ $has_rtc == 0 ] ; then
   elif [ $((($byte_F&0x2) != 0)) == '1' ] ; then
   	# woke up by alarm 2 (shutdown), turn it off immediately
     log 'Seems I was unexpectedly woken up by shutdown alarm, must go back to sleep...'
-    do_shutdown $halt_pin $has_rtc
+    do_shutdown $HALT_PIN $has_rtc
   fi
 
   # clear alarm flags
@@ -92,7 +103,7 @@ sleep 3
 # delay until GPIO pin state gets stable
 counter=0
 while [ $counter -lt 5 ]; do  # increase this value if it needs more time
-  if [ $(gpio -g read $halt_pin) == '1' ] ; then
+  if [ $(gpio -g read $HALT_PIN) == '1' ] ; then
     counter=$(($counter+1))
   else
     counter=0
@@ -114,7 +125,7 @@ fi
 log 'Pending for incoming shutdown command...'
 alarm_shutdown=0
 while true; do
-  gpio -g wfi $halt_pin falling
+  gpio -g wfi $HALT_PIN falling
   if [ $has_rtc == 0 ] ; then
     byte_F=$(i2c_read 0x01 $I2C_RTC_ADDRESS 0x0F)
     if [ $((($byte_F&0x2) != 0)) == '1' ] ; then
@@ -155,11 +166,11 @@ elif [ $lv_shutdown -eq 1 ]; then
   vrec=$(get_recovery_voltage_threshold)
   log "Low voltage threshold is $vlow, recovery voltage threshold is $vrec"
 else
-  log "Shutting down system because GPIO-$halt_pin pin is pulled down."
+  log "Shutting down system because GPIO-$HALT_PIN pin is pulled down."
 fi
 
 # run beforeShutdown.sh
 "$cur_dir/beforeShutdown.sh" >> "$cur_dir/wittyPi.log" 2>&1 &
 
 # shutdown Raspberry Pi
-do_shutdown $halt_pin $has_rtc
+do_shutdown $HALT_PIN $has_rtc

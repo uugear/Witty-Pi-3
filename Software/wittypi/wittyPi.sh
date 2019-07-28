@@ -15,7 +15,7 @@ echo '==========================================================================
 echo '|                                                                              |'
 echo '|   Witty Pi - Realtime Clock + Power Management for Raspberry Pi              |'
 echo '|                                                                              |'
-echo '|                   < Version 3.00 >     by UUGear s.r.o.                      |'
+echo '|                   < Version 3.10 >     by UUGear s.r.o.                      |'
 echo '|                                                                              |'
 echo '================================================================================'
 
@@ -40,6 +40,15 @@ if ! is_rtc_connected ; then
   log 'Seems Witty Pi board is not connected? Quitting...'
   echo ''
   exit
+fi
+
+if one_wire_confliction ; then
+	echo ''
+	log 'Confliction detected:'
+	log "1-Wire interface is enabled on GPIO-$HALT_PIN, which is also used by Witty Pi."
+	log 'You may solve this confliction by moving 1-Wire interface to another GPIO pin.'
+	echo ''
+	exit
 fi
 
 # interactive actions
