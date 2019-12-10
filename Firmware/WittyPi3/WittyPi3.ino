@@ -1,7 +1,7 @@
 /**
  * Firmware for WittyPi 3 
  * 
- * Version: 1.00
+ * Version: 1.02
  */
 #include <core_timers.h>
 #include <analogComp.h>
@@ -19,6 +19,8 @@
 #define PIN_VIN         A1            // pin to ADC1
 #define PIN_VOUT        A2            // pin to ADC2
 #define PIN_VK          A3            // pin to ADC3
+#define PIN_SDA         4             // pin to SDA for I2C
+#define PIN_SCL         6             // pin to SCL for I2C
 
 #define I2C_ID              0         // firmware id
 #define I2C_VOLTAGE_IN_I    1         // integer part for input voltage
@@ -76,6 +78,8 @@ void setup() {
   pinMode(PIN_VIN, INPUT);
   pinMode(PIN_VOUT, INPUT);
   pinMode(PIN_VK, INPUT);
+  pinMode(PIN_SDA, INPUT_PULLUP);
+  pinMode(PIN_SCL, INPUT_PULLUP);
   cutPower();
 
   // use internal 1.1V reference
@@ -98,17 +102,9 @@ void setup() {
   PCMSK1 = _BV (PCINT8) | _BV (PCINT9); 
   PCMSK0 = _BV (PCINT0) | _BV (PCINT5);
 
-  // initialize Timer1
-  TCCR1A = 0;    // set entire TCCR1A register to 0
-  TCCR1B = 0;    // set entire TCCR1B register to 0
-
-  // enable Timer1 overflow interrupt:
-  bitSet(TIMSK1, TOIE1);
-
-  // set 1024 prescaler
-  bitSet(TCCR1B, CS12);
-  bitSet(TCCR1B, CS10);
-
+  // enable Timer1
+  timer1_enable();
+  
   // enable all interrupts
   sei();
 
@@ -142,7 +138,7 @@ void loop() {
 
 // initialize the registers and synchronize with EEPROM
 void initializeRegisters() {
-  i2cReg[I2C_ID] = 0x20;
+  i2cReg[I2C_ID] = 0x22;
   i2cReg[I2C_VOLTAGE_IN_I] = 0;
   i2cReg[I2C_VOLTAGE_IN_D] = 0;
   i2cReg[I2C_VOLTAGE_OUT_I] = 0;
@@ -202,7 +198,34 @@ void watchdog_disable() {
 }
 
 
+void timer1_enable() {
+  // set entire TCCR1A and TCCR1B register to 0
+  TCCR1A = 0;
+  TCCR1B = 0;
+  
+  // set 1024 prescaler
+  bitSet(TCCR1B, CS12);
+  bitSet(TCCR1B, CS10);
+
+  // clear overflow interrupt flag
+  bitSet(TIFR1, TOV1);
+
+  // set timer counter
+  TCNT1 = getPowerCutPreloadTimer();
+
+  // enable Timer1 overflow interrupt
+  bitSet(TIMSK1, TOIE1);
+}
+
+
+void timer1_disable() {
+  // disable Timer1 overflow interrupt
+  bitClear(TIMSK1, TOIE1);
+}
+
+
 void sleep() {
+  timer1_disable();                       // disable Timer1
   ADCSRA &= ~_BV(ADEN);                   // ADC off
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);    // power-down mode 
   watchdog_enable();                      // enable watchdog
@@ -249,7 +272,11 @@ void sleep() {
   sleep_disable();                        // clear SE bit
   watchdog_disable();                     // disable watchdog
   ADCSRA |= _BV(ADEN);                    // ADC on
+  timer1_enable();                        // enable Timer1
   sei();                                  // enable interrupts
+  
+  pinMode(PIN_SDA, INPUT_PULLUP);         // explicitly specify SDA pin mode before waking up
+  pinMode(PIN_SCL, INPUT_PULLUP);         // explicitly specify SCL pin mode before waking up
 
   // tap the button to wake up
   listenToTxd = false;
@@ -519,4 +546,3 @@ void processAlarmIfNeeded() {
     }
   }
 }
-
