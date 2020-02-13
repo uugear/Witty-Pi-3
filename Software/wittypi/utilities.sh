@@ -168,7 +168,7 @@ get_utc_date_time()
   local datestr=$(date +%Y-)
   local curDate=$(date +%d)
   if [[ "$date" < "$curDate" ]] ; then
-    datestr+=$(date --date="$(date +%m) +1 month" +%m-)
+    datestr+=$(date --date="$(date +%Y-%m-15) +1 month" +%m-)
   else
     datestr+=$(date +%m-)
   fi
@@ -216,7 +216,7 @@ get_local_date_time()
   local datestr=$(date +%Y-)
   local curDate=$(date +%d)
   if [[ "$date" < "$curDate" ]] ; then
-    datestr+=$(date --date="$(date +%m) +1 month" +%m-)
+    datestr+=$(date --date="$(date +%Y-%m-15) +1 month" +%m-)
   else
     datestr+=$(date +%m-)
   fi
