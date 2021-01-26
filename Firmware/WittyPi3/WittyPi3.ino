@@ -124,7 +124,7 @@ void loop() {
     voltageQueryTime = curTime;
 
     // if input voltage is not fixed 5V, detect low voltage
-    if (i2cReg[I2C_POWER_MODE] == 1 && powerIsOn && listenToTxd && i2cReg[I2C_LV_SHUTDOWN] == 0 && i2cReg[I2C_CONF_LOW_VOLTAGE] != 255) {
+    if (powerIsOn && listenToTxd && i2cReg[I2C_LV_SHUTDOWN] == 0 && i2cReg[I2C_CONF_LOW_VOLTAGE] != 255) {
       float vin = getInputVoltage();
       float vlow = ((float)i2cReg[I2C_CONF_LOW_VOLTAGE]) / 10;
       if (vin < vlow) {  // input voltage is below the low voltage threshold
@@ -256,7 +256,7 @@ void sleep() {
 
       // check input voltage if shutdown because of low voltage, and recovery voltage has been set
       // will skip checking I2C_LV_SHUTDOWN if I2C_CONF_LOW_VOLTAGE is set to 0xFF
-      if (i2cReg[I2C_POWER_MODE] == 1 && (i2cReg[I2C_LV_SHUTDOWN] == 1 || i2cReg[I2C_CONF_LOW_VOLTAGE] == 255) && i2cReg[I2C_CONF_RECOVERY_VOLTAGE] != 255) {     
+      if ((i2cReg[I2C_LV_SHUTDOWN] == 1 || i2cReg[I2C_CONF_LOW_VOLTAGE] == 255) && i2cReg[I2C_CONF_RECOVERY_VOLTAGE] != 255) {
         ADCSRA |= _BV(ADEN);
         float vin = getInputVoltage();
         ADCSRA &= ~_BV(ADEN);
