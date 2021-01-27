@@ -66,6 +66,8 @@ volatile unsigned long buttonStateChangeTime = 0;
 
 volatile unsigned long voltageQueryTime = 0;
 
+volatile unsigned int powerCutDelay = 0;
+
 void setup() {
 
   // initialize pin states and make sure power is cut
@@ -211,7 +213,7 @@ void timer1_enable() {
   bitSet(TIFR1, TOV1);
 
   // set timer counter
-  TCNT1 = getPowerCutPreloadTimer();
+  TCNT1 = getPowerCutPreloadTimer(true);
 
   // enable Timer1 overflow interrupt
   bitSet(TIMSK1, TOIE1);
@@ -283,7 +285,7 @@ void sleep() {
   turningOff = false;
   buttonPressed = true;
   powerOn();
-  TCNT1 = getPowerCutPreloadTimer();
+  TCNT1 = getPowerCutPreloadTimer(true);
 }
 
 
@@ -370,8 +372,18 @@ int getDecimalPart(float v) {
 
 
 // get the preload timer value for power cut
-unsigned int getPowerCutPreloadTimer() {
-  return 65535 - 781 * ((i2cReg[I2C_CONF_POWER_CUT_DELAY] > 83) ? 50 : i2cReg[I2C_CONF_POWER_CUT_DELAY]);
+unsigned int getPowerCutPreloadTimer(boolean reset) {
+  if (reset) {
+    powerCutDelay = i2cReg[I2C_CONF_POWER_CUT_DELAY];
+  }
+  unsigned int actualDelay = 0;
+  if (powerCutDelay > 83) {
+    actualDelay = 83;
+  } else {
+    actualDelay = powerCutDelay;
+  }
+  powerCutDelay -= actualDelay;
+  return 65535 - 781 * actualDelay;
 }
 
 
@@ -428,7 +440,7 @@ ISR (PCINT0_vect) {
     listenToTxd = false;
     turningOff = true;
     ledOff(); // turn off the white LED
-    TCNT1 = getPowerCutPreloadTimer();
+    TCNT1 = getPowerCutPreloadTimer(true);
   }
   processAlarmIfNeeded(); // PCINT5
 }
@@ -457,11 +469,11 @@ ISR (PCINT1_vect) {
 
       wakeupByWatchdog = false; // will quit sleeping
       
-      if (!buttonPressed && TCNT1 - getPowerCutPreloadTimer() > 5000) {
+      if (!buttonPressed) {
         buttonPressed = true;
         powerOn();
       }
-      TCNT1 = getPowerCutPreloadTimer();
+      TCNT1 = getPowerCutPreloadTimer(true);
     } else {  // button is released
       buttonPressed = false;
     }
@@ -484,20 +496,24 @@ ISR (PCINT1_vect) {
 
 // timer1 overflow interrupt routine
 ISR (TIM1_OVF_vect) {
-  // cut the power after delay
-  TCNT1 = getPowerCutPreloadTimer();
-  if (buttonPressed && digitalRead(PIN_BUTTON) == 0) {
-    forcePowerCut = true;
-    cutPower();
-  }
-  if (turningOff) {
-    if (digitalRead(PIN_TX_UP) == 1) {  // if it is rebooting
-      turningOff = false;
-      ledOn(1);
-    } else {  // cut the power and enter sleep
+  if (powerCutDelay == 0) {
+    // cut the power after delay
+    TCNT1 = getPowerCutPreloadTimer(true);
+    if (buttonPressed && digitalRead(PIN_BUTTON) == 0) {
+      forcePowerCut = true;
       cutPower();
-      sleep();
     }
+    if (turningOff) {
+      if (digitalRead(PIN_TX_UP) == 1) {  // if it is rebooting
+        turningOff = false;
+        ledOn(1);
+      } else {  // cut the power and enter sleep
+        cutPower();
+        sleep();
+      }
+    }
+  } else {
+    TCNT1 = getPowerCutPreloadTimer(false);
   }
 }
 
