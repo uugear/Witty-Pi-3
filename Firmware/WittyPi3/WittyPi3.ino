@@ -4,11 +4,9 @@
  * Version: 1.02
  */
 #include <core_timers.h>
-#include <analogComp.h>
 #include <avr/sleep.h>
-#include <WireS.h>
 #include <EEPROM.h>
-
+#include <WireS.h>
 
 #define PIN_SYS_UP      0             // pin to listen to SYS_UP
 #define PIN_BUTTON      1             // pin to button
@@ -91,10 +89,10 @@ void setup() {
   initializeRegisters();
 
   // i2c initialization
-  Wire.begin((i2cReg[I2C_CONF_ADDRESS] <= 0x07 || i2cReg[I2C_CONF_ADDRESS] >= 0x78) ? 0x69 : i2cReg[I2C_CONF_ADDRESS]);
-  Wire.onAddrReceive(addressEvent);
-  Wire.onReceive(receiveEvent);
-  Wire.onRequest(requestEvent);
+  TinyWireS.begin((i2cReg[I2C_CONF_ADDRESS] <= 0x07 || i2cReg[I2C_CONF_ADDRESS] >= 0x78) ? 0x69 : i2cReg[I2C_CONF_ADDRESS]);
+  TinyWireS.onAddrReceive(addressEvent);
+  TinyWireS.onReceive(receiveEvent);
+  TinyWireS.onRequest(requestEvent);
 
   // disable global interrupts
   cli();
@@ -389,8 +387,8 @@ unsigned int getPowerCutPreloadTimer(boolean reset) {
 
 // receives a sequence of start|address|direction bit from i2c master
 boolean addressEvent(uint16_t slaveAddress, uint8_t startCount) {
-  if (startCount > 0 && Wire.available()) {
-    i2cIndex = Wire.read();
+  if (startCount > 0 && TinyWireS.available()) {
+    i2cIndex = TinyWireS.read();
   }
   return true;
 }
@@ -398,10 +396,10 @@ boolean addressEvent(uint16_t slaveAddress, uint8_t startCount) {
 
 // receives a sequence of data from i2c master (master writes to this device)
 void receiveEvent(int count) {
-  if (Wire.available()) {
-    i2cIndex = Wire.read();
-    if (Wire.available()) {
-      updateRegister(i2cIndex, Wire.read());
+  if (TinyWireS.available()) {
+    i2cIndex = TinyWireS.read();
+    if (TinyWireS.available()) {
+      updateRegister(i2cIndex, TinyWireS.read());
     }
   }
 }
@@ -424,7 +422,7 @@ void requestEvent() {
       updatePowerMode();
       break;
   }
-  Wire.write(i2cReg[i2cIndex]);
+  TinyWireS.write(i2cReg[i2cIndex]);
 }
 
 
