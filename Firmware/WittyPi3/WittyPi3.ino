@@ -499,10 +499,7 @@ ISR (TIM1_OVF_vect) {
   if (powerCutDelay == 0) {
     // cut the power after delay
     TCNT1 = getPowerCutPreloadTimer(true);
-    if (buttonPressed && digitalRead(PIN_BUTTON) == 0) {
-      forcePowerCut = true;
-      cutPower();
-    }
+    forcePowerCutIfNeeded();
     if (turningOff) {
       if (digitalRead(PIN_TX_UP) == 1) {  // if it is rebooting
         turningOff = false;
@@ -514,6 +511,7 @@ ISR (TIM1_OVF_vect) {
     }
   } else {
     TCNT1 = getPowerCutPreloadTimer(false);
+    forcePowerCutIfNeeded();
   }
 }
 
@@ -560,5 +558,15 @@ void processAlarmIfNeeded() {
         }
       }
     }
+  }
+}
+
+
+// Force power cut, if button is pressed and hold for a few seconds
+void forcePowerCutIfNeeded() {
+ if (buttonPressed && digitalRead(PIN_BUTTON) == 0) {
+    forcePowerCut = true;
+    cutPower();
+    ledOff();
   }
 }
