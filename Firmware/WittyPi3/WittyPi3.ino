@@ -1,7 +1,7 @@
 /**
  * Firmware for WittyPi 3 
  * 
- * Version: 1.02
+ * Version: 1.03
  */
 #include <core_timers.h>
 #include <avr/sleep.h>
@@ -138,7 +138,7 @@ void loop() {
 
 // initialize the registers and synchronize with EEPROM
 void initializeRegisters() {
-  i2cReg[I2C_ID] = 0x22;
+  i2cReg[I2C_ID] = 0x23;
   i2cReg[I2C_VOLTAGE_IN_I] = 0;
   i2cReg[I2C_VOLTAGE_IN_D] = 0;
   i2cReg[I2C_VOLTAGE_OUT_I] = 0;
