@@ -9,7 +9,8 @@ export LC_ALL=en_GB.UTF-8
 if [ -z ${I2C_RTC_ADDRESS+x} ]; then
 	readonly I2C_RTC_ADDRESS=0x68
 	readonly I2C_MC_ADDRESS=0x69
-	
+	                  
+	readonly I2C_ID=0
 	readonly I2C_VOLTAGE_IN_I=1
 	readonly I2C_VOLTAGE_IN_D=2
 	readonly I2C_VOLTAGE_OUT_I=3
@@ -35,6 +36,9 @@ if [ -z ${I2C_RTC_ADDRESS+x} ]; then
 	readonly SYSUP_PIN=17  # output SYS_UP signal on GPIO-17 (BCM naming)
 fi
 
+readonly INTERNET_SERVER='http://google.com' # check network accessibility and get network time
+
+
 one_wire_confliction()
 {
 	if [[ $HALT_PIN -eq 4 ]]; then
@@ -56,8 +60,8 @@ one_wire_confliction()
 
 has_internet()
 {
-  nc -z -w 5 8.8.8.8 53  >/dev/null 2>&1
-  if [ $? -eq 0 ]; then
+  resp=$(curl -s --head $INTERNET_SERVER)
+  if [[ ${#resp} -ne 0 ]] ; then
     return 0
   else
     return 1
@@ -66,12 +70,16 @@ has_internet()
 
 get_network_timestamp()
 {
-	if $(has_internet) ; then
-		local t=$(curl -s --head http://google.com | grep ^Date: | sed 's/Date: //g')
-		echo $(date -d "$t" +%s)
-	else
-		echo -1
-	fi
+  if $(has_internet) ; then
+    local t=$(curl -s --head $INTERNET_SERVER | grep ^Date: | sed 's/Date: //g')
+    if [ ! -z "$t" ]; then
+      echo $(date -d "$t" +%s)
+    else
+      echo -1
+    fi
+  else
+    echo -1
+  fi
 }
 
 is_rtc_connected()
@@ -348,10 +356,14 @@ clear_shutdown_time()
 
 net_to_system()
 {
-	log '  Applying network time to system...'
 	local net_ts=$(get_network_timestamp)
-	sudo date -u -s @$net_ts >/dev/null
-  log '  Done :-)'
+	if [[ "$net_ts" != "-1" ]]; then
+    log '  Applying network time to system...'
+    sudo date -u -s @$net_ts >/dev/null
+    log '  Done :-)'
+  else
+    log '  Can not get legit network time.'
+  fi
 }
 
 system_to_rtc()

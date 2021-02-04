@@ -10,7 +10,7 @@ cur_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # utilities
 . "$cur_dir/utilities.sh"
 
-log 'Witty Pi daemon (v3.11) is started.'
+log 'Witty Pi daemon (v3.12) is started.'
 
 # log Raspberry Pi model
 pi_model=$(cat /proc/device-tree/model)
@@ -45,12 +45,15 @@ has_rtc=$?  # should be 0 if RTC presents
 is_mc_connected
 has_mc=$?	# should be 0 if micro controller presents
 
-# check if system was shut down because of low-voltage
 if [ $has_mc == 0 ] ; then
+	# check if system was shut down because of low-voltage
 	recovery=$(i2c_read 0x01 $I2C_MC_ADDRESS $I2C_LV_SHUTDOWN)
 	if [ $recovery == '0x01' ]; then
 	  log 'System was previously shut down because of low-voltage.'
 	fi
+	# print out firmware ID
+	firmwareID=$(i2c_read 0x01 $I2C_MC_ADDRESS $I2C_ID)
+	log "Firmware ID: $firmwareID"
 	# print out current voltages and current
   vout=$(get_output_voltage)
   iout=$(get_output_current)

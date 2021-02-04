@@ -15,7 +15,7 @@ echo '==========================================================================
 echo '|                                                                              |'
 echo '|   Witty Pi - Realtime Clock + Power Management for Raspberry Pi              |'
 echo '|                                                                              |'
-echo '|                   < Version 3.11 >     by UUGear s.r.o.                      |'
+echo '|                   < Version 3.12 >     by UUGear s.r.o.                      |'
 echo '|                                                                              |'
 echo '================================================================================'
 
@@ -49,6 +49,10 @@ if one_wire_confliction ; then
 	log 'You may solve this confliction by moving 1-Wire interface to another GPIO pin.'
 	echo ''
 	exit
+fi
+
+if is_mc_connected ; then
+  firmwareID=$(i2c_read 0x01 $I2C_MC_ADDRESS $I2C_ID)
 fi
 
 # interactive actions
@@ -224,13 +228,17 @@ set_default_state()
 
 set_power_cut_delay()
 {
-	read -p 'Input new delay (0.0~8.0: value in seconds): ' delay
-  if (( $(awk "BEGIN {print ($delay >= 0 && $delay <= 8.0)}") )); then
+  local maxVal='8.0';
+	if [ $(($firmwareID)) -ge 35 ]; then
+    maxVal='25.0'
+  fi
+  read -p "Input new delay (0.0~$maxVal: value in seconds): " delay
+  if (( $(awk "BEGIN {print ($delay >= 0 && $delay <= $maxVal)}") )); then
     local d=$(calc $delay*10)
     i2c_write 0x01 $I2C_MC_ADDRESS $I2C_CONF_POWER_CUT_DELAY ${d%.*}
     log "Power cut delay set to $delay seconds!" && sleep 2
   else
-    echo 'Please input from 0.0 to 8.0 ...' && sleep 2
+    echo "Please input from 0.0 to $maxVal ..." && sleep 2
   fi
 }
 
