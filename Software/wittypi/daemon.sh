@@ -10,7 +10,7 @@ cur_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # utilities
 . "$cur_dir/utilities.sh"
 
-log 'Witty Pi daemon (v3.12) is started.'
+log 'Witty Pi daemon (v3.13) is started.'
 
 # log Raspberry Pi model
 pi_model=$(cat /proc/device-tree/model)
