@@ -34,9 +34,9 @@ if [ -z ${I2C_RTC_ADDRESS+x} ]; then
 	
 	readonly HALT_PIN=4    # halt by GPIO-4 (BCM naming)
 	readonly SYSUP_PIN=17  # output SYS_UP signal on GPIO-17 (BCM naming)
-fi
 
-readonly INTERNET_SERVER='http://google.com' # check network accessibility and get network time
+	readonly INTERNET_SERVER='http://google.com' # check network accessibility and get network time
+fi
 
 
 one_wire_confliction()
