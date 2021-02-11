@@ -32,7 +32,8 @@ seconds, while "H5 M2" means 5 hours and 2 minutes.
   An ON state will be ended by a scheduled shutdown, while an OFF state will be
 end by a scheduled startup. If you want to skip any shutdown/startup, just append
 "WAIT" at the end of the state, and make sure your program will shutdown your
-Raspberry Pi after finishing its job.
+Raspberry Pi after finishing its job. You can run command "gpio -g mode 4 out" to
+pull down GPIO-4 so Witty Pi's software will shutdown your Raspberry Pi gracefully.
 
 Sometimes you may want to skip certain scheduling of shutdown/startup, and let 
 your own program to do the job. This can be achieved by using the WAIT syntax.
