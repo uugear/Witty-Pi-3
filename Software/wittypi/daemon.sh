@@ -20,6 +20,17 @@ log "Running on $pi_model"
 wp_ver=$(gpio -v | sed -n '1 s/.*\([0-9]\+\.[0-9]\+\).*/\1/p')
 log "Wiring Pi version: $wp_ver"
 
+# log NOOBS version, if exists
+if [[ ! -d "$cur_dir/tmp" ]]; then
+  mkdir "$cur_dir/tmp"
+fi
+mount /dev/mmcblk0p1 "$cur_dir/tmp"
+noobs_ver=$(cat "$cur_dir/tmp/BUILD-DATA" | grep 'NOOBS Version:')
+if [ ! -z "$noobs_ver" ]; then
+  log "$noobs_ver"
+fi
+umount "$cur_dir/tmp"
+
 # check 1-wire confliction
 if one_wire_confliction ; then
 	log "Confliction: 1-Wire interface is enabled on GPIO-$HALT_PIN, which is also used by Witty Pi."
