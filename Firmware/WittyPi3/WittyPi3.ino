@@ -1,7 +1,7 @@
 /**
  * Firmware for WittyPi 3 
  * 
- * Version: 1.03
+ * Version: 1.04
  */
 #include <core_timers.h>
 #include <avr/sleep.h>
@@ -138,7 +138,7 @@ void loop() {
 
 // initialize the registers and synchronize with EEPROM
 void initializeRegisters() {
-  i2cReg[I2C_ID] = 0x23;
+  i2cReg[I2C_ID] = 0x24;
   i2cReg[I2C_VOLTAGE_IN_I] = 0;
   i2cReg[I2C_VOLTAGE_IN_D] = 0;
   i2cReg[I2C_VOLTAGE_OUT_I] = 0;
@@ -460,6 +460,7 @@ ISR (PCINT1_vect) {
     if (digitalRead(PIN_BUTTON) == 0) {   // button is pressed, PCINT9
       
       // restore from RTC alarm processing
+      digitalWrite(PIN_BUTTON, 1);
       pinMode(PIN_BUTTON, INPUT_PULLUP);
       
       // turn on the white LED
