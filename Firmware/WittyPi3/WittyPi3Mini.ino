@@ -1,5 +1,5 @@
 /**
- * Firmware for WittyPi 3 
+ * Firmware for WittyPi 3 Mini
  * 
  * Version: 1.04
  */
@@ -138,7 +138,7 @@ void loop() {
 
 // initialize the registers and synchronize with EEPROM
 void initializeRegisters() {
-  i2cReg[I2C_ID] = 0x24;
+  i2cReg[I2C_ID] = 0x22;
   i2cReg[I2C_VOLTAGE_IN_I] = 0;
   i2cReg[I2C_VOLTAGE_IN_D] = 0;
   i2cReg[I2C_VOLTAGE_OUT_I] = 0;
@@ -162,14 +162,10 @@ void initializeRegisters() {
 
   // make sure product name is stored
   EEPROM.update(0, 'W');
-  EEPROM.update(1, 'i');
-  EEPROM.update(2, 't');
-  EEPROM.update(3, 't');
-  EEPROM.update(4, 'y');
-  EEPROM.update(5, 'P');
-  EEPROM.update(6, 'i');
-  EEPROM.update(7, '3');
-  EEPROM.update(8, 0);
+  EEPROM.update(1, 'P');
+  EEPROM.update(2, '3');
+  EEPROM.update(3, 'M');
+  EEPROM.update(4, 0);
 
   // synchronize configuration with EEPROM
   for (int i = I2C_CONF_ADDRESS; i < I2C_REG_COUNT; i ++) {
