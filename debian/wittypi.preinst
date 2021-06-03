@@ -1,0 +1,86 @@
+#!/bin/bash
+#
+# Pre-installation procedure. Check for broken old configuration, transfer
+# to safe path in /etc/.
+
+set -e
+
+# Source the debconf library
+#. /usr/share/debconf/confmodule
+
+
+case "$1" in
+    install|upgrade)
+        # enable I2C on Raspberry Pi
+        echo '>>> Enable I2C'
+        if grep -q 'i2c-bcm2708' /etc/modules; then
+          echo 'Seems i2c-bcm2708 module already exists, skip this step.'
+        else
+          echo 'i2c-bcm2708' >> /etc/modules
+        fi
+        if grep -q 'i2c-dev' /etc/modules; then
+          echo 'Seems i2c-dev module already exists, skip this step.'
+        else
+          echo 'i2c-dev' >> /etc/modules
+        fi
+        if [ -f /boot/config.txt ]; then
+        # Neccessary for Raspberian
+                bootconfig=/boot/config.txt
+        fi
+        if [ -f /boot/firmware/config.txt ]; then
+                if [ -f /boot/firmware/syscfg.txt ]; then
+                        bootconfig=/boot/firmware/syscfg.txt
+                else
+                        bootconfig=/boot/firmware/config.txt
+                fi
+        fi
+        if grep -q 'dtoverlay=w1-gpio' ${bootconfig}; then
+                # This is important because 1-Wire interface uses GPIO-4 by 
+                # default, which will conflict with Witty Pi. If you need to
+                # use 1-Wire interface, please assign it to a different GPIO pin.
+                echo "Replacing GPIO-4 to GPIO 18. GPIO-4 is used by WittyPi!"
+                sed -i 's/dtoverlay=w1-gpio/dtoverlay=w1-gpio,gpiopin=18/' ${bootconfig}
+        fi
+        if grep -q 'dtparam=i2c1=on' ${bootconfig}; then
+          echo 'Seems i2c1 parameter already set, skip this step.'
+        else
+          echo 'dtparam=i2c1=on' >> ${bootconfig}
+        fi
+        if grep -q 'dtparam=i2c_arm=on' ${bootconfig}; then
+          echo 'Seems i2c_arm parameter already set, skip this step.'
+        else
+          echo 'dtparam=i2c_arm=on' >> ${bootconfig}
+        fi
+        if grep -q 'dtoverlay=pi3-miniuart-bt' ${bootconfig}; then
+          echo 'Seems setting Pi3/4 Bluetooth to use mini-UART is done already, skip this step.'
+        else
+          echo 'dtoverlay=pi3-miniuart-bt' >> ${bootconfig}
+        fi
+        if grep -q 'core_freq=250' ${bootconfig}; then
+          echo 'Seems the frequency of GPU processor core is set to 250MHz already, skip this step.'
+        else
+          echo 'core_freq=250' >> ${bootconfig}
+        fi
+        if [ -f /etc/modprobe.d/raspi-blacklist.conf ]; then
+          sed -i 's/^blacklist spi-bcm2708/#blacklist spi-bcm2708/' /etc/modprobe.d/raspi-blacklist.conf
+          sed -i 's/^blacklist i2c-bcm2708/#blacklist i2c-bcm2708/' /etc/modprobe.d/raspi-blacklist.conf
+        else
+          echo 'File raspi-blacklist.conf does not exist, skip this step.'
+        fi
+
+        echo '>>> Make sure en_GB.UTF-8 locale is installed'
+        locale_commentout=$(sed -n 's/\(#\).*en_GB.UTF-8 UTF-8/1/p' /etc/locale.gen)
+        if [[ $locale_commentout -ne 1 ]]; then
+        	echo 'Seems en_GB.UTF-8 locale has been installed, skip this step.'
+        else
+        	sed -i.bak 's/^.*\(en_GB.UTF-8[[:blank:]]\+UTF-8\)/\1/' /etc/locale.gen
+        	locale-gen
+        fi
+
+        # Add global logfile
+        touch /var/log/wittypi.log
+        chown syslog:adm /var/log/wittypi.log
+        ;;
+esac
+
+

@@ -3,13 +3,25 @@
 #
 # This script provides some useful utility functions
 #
+set -e
+
+if [ -f /boot/config.txt ]; then
+        bootconfig=/boot/config.txt
+fi
+if [ -f /boot/firmware/config.txt ]; then
+        if [ -f /boot/firmware/usercfg.txt ]; then
+                bootconfig=/boot/firmware/usercfg.txt
+        else
+                bootconfig=/boot/firmware/config.txt
+        fi
+fi
 
 export LC_ALL=en_GB.UTF-8
 
 if [ -z ${I2C_RTC_ADDRESS+x} ]; then
 	readonly I2C_RTC_ADDRESS=0x68
 	readonly I2C_MC_ADDRESS=0x69
-	                  
+
 	readonly I2C_ID=0
 	readonly I2C_VOLTAGE_IN_I=1
 	readonly I2C_VOLTAGE_IN_D=2
@@ -19,7 +31,7 @@ if [ -z ${I2C_RTC_ADDRESS+x} ]; then
 	readonly I2C_CURRENT_OUT_D=6
 	readonly I2C_POWER_MODE=7
 	readonly I2C_LV_SHUTDOWN=8
-	
+
 	readonly I2C_CONF_ADDRESS=9
 	readonly I2C_CONF_DEFAULT_ON=10
 	readonly I2C_CONF_PULSE_INTERVAL=11
@@ -31,7 +43,7 @@ if [ -z ${I2C_RTC_ADDRESS+x} ]; then
 	readonly I2C_CONF_ADJ_VIN=17
 	readonly I2C_CONF_ADJ_VOUT=18
 	readonly I2C_CONF_ADJ_IOUT=19
-	
+
 	readonly HALT_PIN=4    # halt by GPIO-4 (BCM naming)
 	readonly SYSUP_PIN=17  # output SYS_UP signal on GPIO-17 (BCM naming)
 
@@ -42,17 +54,17 @@ fi
 one_wire_confliction()
 {
 	if [[ $HALT_PIN -eq 4 ]]; then
-		if grep -qe "^\s*dtoverlay=w1-gpio\s*$" /boot/config.txt; then
+		if grep -qe "^\s*dtoverlay=w1-gpio\s*$" ${bootconfig}; then
 	  	return 0
 		fi
-		if grep -qe "^\s*dtoverlay=w1-gpio-pullup\s*$" /boot/config.txt; then
+		if grep -qe "^\s*dtoverlay=w1-gpio-pullup\s*$" ${bootconfig}; then
 	  	return 0
 		fi
-	fi 
-  if grep -qe "^\s*dtoverlay=w1-gpio,gpiopin=$HALT_PIN\s*$" /boot/config.txt; then
+	fi
+  if grep -qe "^\s*dtoverlay=w1-gpio,gpiopin=$HALT_PIN\s*$" ${bootconfig}; then
   	return 0
 	fi
-	if grep -qe "^\s*dtoverlay=w1-gpio-pullup,gpiopin=$HALT_PIN\s*$" /boot/config.txt; then
+	if grep -qe "^\s*dtoverlay=w1-gpio-pullup,gpiopin=$HALT_PIN\s*$" ${bootconfig}; then
   	return 0
 	fi
 	return 1
@@ -253,19 +265,35 @@ get_startup_time()
 {
   sec=$(bcd2dec $(i2c_read 0x01 $I2C_RTC_ADDRESS 0x07))
   if [ $sec == '80' ]; then
-    sec='??'
+    if [ -e $1 ]; then
+      sec='??'
+    else
+      sec='--'
+    fi
   fi
   min=$(bcd2dec $(i2c_read 0x01 $I2C_RTC_ADDRESS 0x08))
   if [ $min == '80' ]; then
-    min='??'
+    if [ -e $1 ]; then
+      min='??'
+    else
+      min='--'
+    fi
   fi
   hour=$(bcd2dec $(i2c_read 0x01 $I2C_RTC_ADDRESS 0x09))
   if [ $hour == '80' ]; then
-    hour='??'
+    if [ -e $1 ]; then
+      hour='??'
+    else
+      hour='--'
+    fi
   fi
   date=$(bcd2dec $(i2c_read 0x01 $I2C_RTC_ADDRESS 0x0A))
   if [ $date == '80' ]; then
-    date='??'
+    if [ -e $1 ]; then
+      date='??'
+    else
+      date='--'
+    fi
   fi
   echo "$date $hour:$min:$sec"
 }
@@ -273,25 +301,25 @@ get_startup_time()
 set_startup_time()
 {
   i2c_write 0x01 $I2C_RTC_ADDRESS 0x0E 0x07
-  if [ $4 == '??' ]; then
+  if [ $4 == '??' ] || [ $4 == '--' ]; then
     sec='128'
   else
     sec=$(dec2bcd $4)
   fi
   i2c_write 0x01 $I2C_RTC_ADDRESS 0x07 $sec
-  if [ $3 == '??' ]; then
+  if [ $3 == '??' ] || [ $3 == '--' ]; then
     min='128'
   else
     min=$(dec2bcd $3)
   fi
   i2c_write 0x01 $I2C_RTC_ADDRESS 0x08 $min
-  if [ $2 == '??' ]; then
+  if [ $2 == '??' ] || [ $2 == '--' ]; then
     hour='128'
   else
     hour=$(dec2bcd $2)
   fi
   i2c_write 0x01 $I2C_RTC_ADDRESS 0x09 $hour
-  if [ $1 == '??' ]; then
+  if [ $1 == '??' ] || [ $1 == '--' ]; then
     date='128'
   else
     date=$(dec2bcd $1)
@@ -311,15 +339,27 @@ get_shutdown_time()
 {
   min=$(bcd2dec $(i2c_read 0x01 $I2C_RTC_ADDRESS 0x0B))
   if [ $min == '80' ]; then
-    min='??'
+    if [ -e $1 ]; then
+      min='??'
+    else
+      min='--'
+    fi
   fi
   hour=$(bcd2dec $(i2c_read 0x01 $I2C_RTC_ADDRESS 0x0C))
   if [ $hour == '80' ]; then
-    hour='??'
+    if [ -e $1 ]; then
+      hour='??'
+    else
+      hour='--'
+    fi
   fi
   date=$(bcd2dec $(i2c_read 0x01 $I2C_RTC_ADDRESS 0x0D))
   if [ $date == '80' ]; then
-    date='??'
+    if [ -e $1 ]; then
+      date='??'
+    else
+      date='--'
+    fi
   fi
   echo "$date $hour:$min:00"
 }
@@ -327,19 +367,19 @@ get_shutdown_time()
 set_shutdown_time()
 {
   i2c_write 0x01 $I2C_RTC_ADDRESS 0x0E 0x07
-  if [ $3 == '??' ]; then
+  if [ $3 == '??' ] || [ $3 == '--' ]; then
     min='128'
   else
     min=$(dec2bcd $3)
   fi
   i2c_write 0x01 $I2C_RTC_ADDRESS 0x0B $min
-  if [ $2 == '??' ]; then
+  if [ $2 == '??' ] || [ $2 == '--' ]; then
     hour='128'
   else
     hour=$(dec2bcd $2)
   fi
   i2c_write 0x01 $I2C_RTC_ADDRESS 0x0C $hour
-  if [ $1 == '??' ]; then
+  if [ $1 == '??' ] || [ $1 == '--' ]; then
     date='128'
   else
     date=$(dec2bcd $1)
@@ -359,7 +399,7 @@ net_to_system()
 	local net_ts=$(get_network_timestamp)
 	if [[ "$net_ts" != "-1" ]]; then
     log '  Applying network time to system...'
-    sudo date -u -s @$net_ts >/dev/null
+    date -u -s @$net_ts >/dev/null
     log '  Done :-)'
   else
     log '  Can not get legit network time.'
@@ -391,7 +431,7 @@ rtc_to_system()
 {
   log '  Writing RTC time to system...'
 	local rtc_ts=$(get_rtc_timestamp)
-	sudo date -u -s @$rtc_ts >/dev/null
+	date -u -s @$rtc_ts >/dev/null
   log '  Done :-)'
 }
 
@@ -411,23 +451,9 @@ current_timestamp()
   fi
 }
 
-wittypi_home="`dirname \"$0\"`"
-wittypi_home="`( cd \"$wittypi_home\" && pwd )`"
-log2file()
-{
-  local datetime=$(date +'[%Y-%m-%d %H:%M:%S]')
-  local msg="$datetime $1"
-  echo $msg >> $wittypi_home/wittyPi.log
-}
-
 log()
 {
-  if [ $# -gt 1 ] ; then
-    echo $2 "$1"
-  else
-    echo "$1"
-  fi
-  log2file "$1"
+  echo "$1"
 }
 
 i2c_read()
@@ -445,7 +471,7 @@ i2c_read()
       log "I2C read $1 $2 $3 failed (result=$result), and no more retry."
     else
       sleep 1
-      log2file "I2C read $1 $2 $3 failed (result=$result), retrying $retry ..."
+      log "I2C read $1 $2 $3 failed (result=$result), retrying $retry ..."
       i2c_read $1 $2 $3 $retry
     fi
   fi
@@ -465,7 +491,7 @@ i2c_write()
       log "I2C write $1 $2 $3 $4 failed (result=$result), and no more retry."
     else
       sleep 1
-      log2file "I2C write $1 $2 $3 $4 failed (result=$result), retrying $retry ..."
+      log "I2C write $1 $2 $3 $4 failed (result=$result), retrying $retry ..."
       i2c_write $1 $2 $3 $4 $retry
     fi
   fi

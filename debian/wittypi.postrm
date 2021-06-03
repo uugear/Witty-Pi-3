@@ -1,0 +1,73 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+  purge|remove) rm -rf /var/log/wittypi
+                if [ -f /boot/config.txt ]; then
+                        # Neccessary for Raspberian
+                        bootconfig=/boot/config.txt
+                fi
+                if [ -f /boot/firmware/config.txt ]; then
+                        if [ -f /boot/firmware/syscfg.txt ]; then
+                                bootconfig=/boot/firmware/syscfg.txt
+                        else
+                                bootconfig=/boot/firmware/config.txt
+                        fi
+                fi
+                sed -i '/i2c-bcm2708/d' /etc/modules
+                sed -i '/i2c-dev/d' /etc/modules
+                sed -i '/dtparam=i2c1=on/d' ${bootconfig}
+                sed -i '/dtparam=i2c_arm=on/d' ${bootconfig}
+                sed -i '/dtoverlay=pi3-miniuart-bt/d' ${bootconfig}
+                sed -i '/core_freq=250/d' ${bootconfig}
+                if grep -q 'dtoverlay=w1-gpio,gpiopin=18' ${bootconfig}; then
+                        # This is important because 1-Wire interface uses GPIO-4 by 
+                        # default, which will conflict with Witty Pi. If you need to
+                        # use 1-Wire interface, please assign it to a different GPIO pin.
+                        sed -i 's/dtoverlay=w1-gpio,gpiopin=18/dtoverlay=w1-gpio/' ${bootconfig}
+                fi
+                if [ -f /etc/modprobe.d/raspi-blacklist.conf ]; then
+                  sed -i 's/#blacklist spi-bcm2708/blacklist spi-bcm2708/' /etc/modprobe.d/raspi-blacklist.conf
+                  sed -i 's/#blacklist i2c-bcm2708/blacklist i2c-bcm2708/' /etc/modprobe.d/raspi-blacklist.conf
+                fi
+                ;;
+esac
+
+# Automatically added by dh_systemd_start/13.2~bpo10+1
+if [ -d /run/systemd/system ]; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_systemd_enable/13.2~bpo10+1
+if [ "$1" = "remove" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper mask 'wittypi.service' >/dev/null || true
+	fi
+fi
+
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'wittypi.service' >/dev/null || true
+		deb-systemd-helper unmask 'wittypi.service' >/dev/null || true
+	fi
+fi
+# End automatically added section
+# Automatically added by dh_systemd_start/13.2~bpo10+1
+if [ -d /run/systemd/system ]; then
+	systemctl --system daemon-reload >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_systemd_enable/13.2~bpo10+1
+if [ "$1" = "remove" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper mask 'wittypi.service' >/dev/null || true
+	fi
+fi
+
+if [ "$1" = "purge" ]; then
+	if [ -x "/usr/bin/deb-systemd-helper" ]; then
+		deb-systemd-helper purge 'wittypi.service' >/dev/null || true
+		deb-systemd-helper unmask 'wittypi.service' >/dev/null || true
+	fi
+fi
+# End automatically added section

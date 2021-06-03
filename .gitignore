@@ -1,4 +1,12 @@
-
 Software/wittypi/.DS_Store
 Firmware/.DS_Store
 Firmware/WittyPi3/.DS_Store
+debian/debhelper-build-stamp
+debian/files
+debian/*.debhelper.log
+debian/*.postinst.debhelper
+debian/*.postrm.debhelper
+debian/*.substvars
+debian/wittypi/
+debian/.debhelper
+debian/wittypi.prerm.debhelper

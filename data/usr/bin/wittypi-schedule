@@ -1,9 +1,11 @@
 #!/bin/bash
-# file: runScript.sh
+# file: wittypi-runscript
+# new file: wittypi-schedule
 #
 # This script will run automatically after startup, and make next schedule
 # according to the "schedule.wpi" script file
 #
+set -e
 
 # delay if first argument exists
 if [ ! -z "$1" ]; then
@@ -11,11 +13,10 @@ if [ ! -z "$1" ]; then
 fi
 
 # get current directory and schedule file path
-cur_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-schedule_file="$cur_dir/schedule.wpi"
+schedule_file="/etc/wittypi/schedules/schedule.wpi"
 
 # utilities
-. "$cur_dir/utilities.sh"
+. "/usr/share/wittypi/utilities"
 
 # pending until system time gets initialized
 while [[ "$(date +%Y)" == *"1969"* ]] || [[ "$(date +%Y)" == *"1970"* ]]; do
@@ -159,7 +160,7 @@ if [ -f $schedule_file ]; then
               log 'Skip scheduling next startup, which should be done externally.'
             else
               if [ ! -z "$2" ] && [ $interrupted == 0 ] && [ $index != 0 ] ; then
-                # jump back to previous OFF state 
+                # jump back to previous OFF state
                 prev_state=${states[$((index-1))]}
                 prev_duration=$(extract_duration $prev_state)
                 setup_off_state $((check_time-duration-prev_duration))
