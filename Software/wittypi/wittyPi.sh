@@ -256,23 +256,23 @@ set_pulsing_interval()
 
 set_white_led_duration()
 {
-	read -p 'Input new duration for white LED (0~255): ' duration
-	if [ $duration -ge 0 ] && [ $duration -le 255 ]; then
+	read -p 'Input new duration for white LED (0~254): ' duration
+	if [ $duration -ge 0 ] && [ $duration -le 254 ]; then
 		i2c_write 0x01 $I2C_MC_ADDRESS $I2C_CONF_BLINK_LED $duration
 		log "White LED duration set to $duration!" && sleep 2
 	else
-	  echo 'Please input from 0 to 255' && sleep 2
+	  echo 'Please input from 0 to 254' && sleep 2
 	fi
 }
 
 set_dummy_load_duration()
 {
-	read -p 'Input new duration for dummy load (0~255): ' duration
-	if [ $duration -ge 0 ] && [ $duration -le 255 ]; then
+	read -p 'Input new duration for dummy load (0~254): ' duration
+	if [ $duration -ge 0 ] && [ $duration -le 254 ]; then
 		i2c_write 0x01 $I2C_MC_ADDRESS $I2C_CONF_DUMMY_LOAD $duration
 		log "Dummy load duration set to $duration!" && sleep 2
 	else
-	  echo 'Please input from 0 to 255' && sleep 2
+	  echo 'Please input from 0 to 254' && sleep 2
 	fi
 }
 
