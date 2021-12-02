@@ -97,6 +97,9 @@ fi
 # check if it is Raspberry Pi 4
 isRpi4=$(cat /proc/device-tree/model | sed -n 's/.*\(Raspberry Pi 4\).*/1/p')
 
+# check if the OS version is bullseye
+isBullseye=$(head -1 /etc/os-release  | sed -n 's/.*\(bullseye\).*/1/p')
+
 # install wiringPi
 if [ $ERR -eq 0 ]; then
   echo '>>> Install wiringPi'
@@ -104,12 +107,12 @@ if [ $ERR -eq 0 ]; then
   if hash gpio 2>/dev/null; then
   	ver=$(gpio -v | sed -n '1 s/.*\([0-9]\+\.[0-9]\+\).*/\1/p')
   	echo "wiringPi version: $ver"
- 	else
+ 	elif [[ $isBullseye -ne 1 ]]; then
  		apt-get -y install wiringpi
  		ver=$(gpio -v | sed -n '1 s/.*\([0-9]\+\.[0-9]\+\).*/\1/p')
   fi
-	if [[ $isRpi4 -eq 1 ]] && (( $(awk "BEGIN {print ($ver < 2.52)}") )); then
- 		wget https://project-downloads.drogon.net/wiringpi-latest.deb || ((ERR++))
+	if [[ $isBullseye -eq 1 ]] || ([[ $isRpi4 -eq 1 ]] && (( $(awk "BEGIN {print ($ver < 2.52)}") ))); then
+ 		wget https://www.uugear.com/repo/wiringpi-latest.deb || ((ERR++))
 		dpkg -i wiringpi-latest.deb || ((ERR++))
 		rm wiringpi-latest.deb
   fi
