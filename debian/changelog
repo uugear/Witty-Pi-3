@@ -1,3 +1,17 @@
+wittypi (0.0.5) unstable; urgency=medium
+
+  [Added]
+  * Press two seconds for a shutdown (Github User: 'ubidefeo')
+  [Changed]
+  [Deprecated]
+  [Removed]
+  [Fixed]
+  * Correct the value of the HALT-PIN for the added feature of uidefeo
+  * Valid duration value should be 0~254 (backport of original code)
+  [Security]
+
+ -- Lars Gremme <batpi@dein-linux.de>  Sat, 04 Dec 2021 18:03:00 +0100
+
 wittypi (0.0.4) unstable; urgency=medium
 
   [Added]
