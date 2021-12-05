@@ -1,14 +1,12 @@
 #!/bin/bash
-# file: daemon.sh
+# file: daemon
 #
 # This script should be auto started, to support WittyPi hardware
 #
-
-# get current directory
-cur_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+set -e
 
 # utilities
-. "$cur_dir/utilities.sh"
+. "/usr/share/wittypi/utilities"
 
 log 'Witty Pi daemon (v3.13) is started.'
 
@@ -21,15 +19,17 @@ wp_ver=$(gpio -v | sed -n '1 s/.*\([0-9]\+\.[0-9]\+\).*/\1/p')
 log "Wiring Pi version: $wp_ver"
 
 # log NOOBS version, if exists
-if [[ ! -d "$cur_dir/tmp" ]]; then
-  mkdir "$cur_dir/tmp"
+if ! grep -q /dev/mmcblk0p1 /proc/mounts; then
+  if [[ ! -d "/var/lib/wittypi/" ]]; then
+    mkdir "/var/lib/wittypi/"
+  fi
+  mount /dev/mmcblk0p1 "/var/lib/wittypi/"
+  noobs_ver=$(cat "/var/lib/wittypi/BUILD-DATA" | grep 'NOOBS Version:')
+  if [ ! -z "$noobs_ver" ]; then
+    log "$noobs_ver"
+  fi
+  umount "/var/lib/wittypi/"
 fi
-mount /dev/mmcblk0p1 "$cur_dir/tmp"
-noobs_ver=$(cat "$cur_dir/tmp/BUILD-DATA" | grep 'NOOBS Version:')
-if [ ! -z "$noobs_ver" ]; then
-  log "$noobs_ver"
-fi
-umount "$cur_dir/tmp"
 
 # check 1-wire confliction
 if one_wire_confliction ; then
@@ -106,7 +106,7 @@ fi
 
 # synchronize time
 if [ $has_rtc == 0 ] ; then
-  "$cur_dir/syncTime.sh" &
+  "/usr/share/wittypi/synctime" &
 else
   log 'Witty Pi is not connected, skip synchronizing time...'
 fi
@@ -127,13 +127,13 @@ done
 
 # run schedule script
 if [ $has_rtc == 0 ] ; then
-  "$cur_dir/runScript.sh" 0 revise >> "$cur_dir/schedule.log" &
+  "/usr/bin/wittypi-schedule" 0 revise &
 else
   log 'Witty Pi is not connected, skip schedule script...'
 fi
 
 # run afterStartup.sh in background
-"$cur_dir/afterStartup.sh" >> "$cur_dir/wittyPi.log" 2>&1 &
+"/etc/wittypi/afterstartup" 2>&1 &
 
 # wait for GPIO-4 (BCM naming) falling, or alarm B (shutdown)
 log 'Pending for incoming shutdown command...'
@@ -151,17 +151,43 @@ while true; do
       log 'Startup alarm occurs in ON state, ignored'
       clear_alarm_flags
     else
-    	# not shutdown by alarm
+        # not shutdown by alarm
+        # wait for button to be pressed for SHUTDOWN_HOLD_TIME to prevent single accidental button shutdown
+        # by default this is set to 2 seconds, can be changed in utilities.sh
+        counter=0
+        while [ $counter -lt $SHUTDOWN_HOLD_TIME ]; do  # increase this value if it needs more time
+          if [ $(gpio -g read $HALT_PIN) == '0' ] ; then
+            counter=$(($counter+1))
+            log "Pressing power button ${counter} time(s)."
+          else
+            counter=0
+            continue 2
+          fi
+          sleep 1
+        done
       break;
     fi
   else
     # power switch can still work without RTC
+    # wait for button to be pressed for SHUTDOWN_HOLD_TIME to prevent single accidental button shutdown
+    # by default this is set to 2 seconds, can be changed in utilities.sh
+    counter=0
+    while [ $counter -lt $SHUTDOWN_HOLD_TIME ]; do  # increase this value if it needs more time
+      if [ $(gpio -g read $HALT_PIN) == '0' ] ; then
+        counter=$(($counter+1))
+        log "Pressing power button ${counter} time(s)."
+      else
+        counter=0
+        continue 2
+      fi
+      sleep 1
+    done
     break;
   fi
 done
 
 lv_shutdown=0
-if [ $has_mc == 0 ]; then	
+if [ $has_mc == 0 ]; then
 	lv=$(i2c_read 0x01 $I2C_MC_ADDRESS $I2C_LV_SHUTDOWN)
 	if [ $lv == '0x01' ]; then
 		lv_shutdown=1
@@ -184,7 +210,7 @@ else
 fi
 
 # run beforeShutdown.sh
-"$cur_dir/beforeShutdown.sh" >> "$cur_dir/wittyPi.log" 2>&1 &
+"/etc/wittypi/beforeshutdown" 2>&1 &
 
 # shutdown Raspberry Pi
 do_shutdown $HALT_PIN $has_rtc

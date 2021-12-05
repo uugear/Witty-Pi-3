@@ -1,0 +1,12 @@
+/var/log/wittypi.log
+{
+        rotate 14
+        daily
+        missingok
+        notifempty
+        delaycompress
+        compress
+        postrotate
+          systemctl restart wittypi &> /dev/null
+        endscript
+}

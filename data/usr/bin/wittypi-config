@@ -1,15 +1,9 @@
-[ -z $BASH ] && { exec bash "$0" "$@" || exit; }
 #!/bin/bash
-# file: wittyPi.sh
+# file: wittypi
 #
 # Run this application to interactly configure your Witty Pi
 #
-
-# check if sudo is used
-#if [ "$(id -u)" != 0 ]; then
-#  echo 'Sorry, you need to run this script with sudo'
-#  exit 1
-#fi
+set -e
 
 echo '================================================================================'
 echo '|                                                                              |'
@@ -20,12 +14,7 @@ echo '|                                                                         
 echo '================================================================================'
 
 # include utilities script in same directory
-my_dir="`dirname \"$0\"`"
-my_dir="`( cd \"$my_dir\" && pwd )`"
-if [ -z "$my_dir" ] ; then
-  exit 1
-fi
-. $my_dir/utilities.sh
+. /usr/share/wittypi/utilities
 
 hash gpio 2>/dev/null
 if [ $? -ne 0 ]; then
@@ -58,8 +47,8 @@ fi
 # interactive actions
 synchronize_time()
 {
-  log '  Running syncTime.sh ...'
-  . "$my_dir/syncTime.sh"
+  log '  Running synctime ...'
+  . "/usr/share/wittypi/synctime"
 }
 
 schedule_startup()
@@ -71,7 +60,7 @@ schedule_startup()
   else
     echo "  Auto startup time is currently set to \"$startup_time\""
   fi
-  if [ -f "$my_dir/schedule.wpi" ]; then
+  if [ -f "/etc/wittypi/schedules/schedule.wpi" ]; then
       echo '  [WARNING] Your manual schedule may disturb the schedule script running!'
   fi
   read -p '  When do you want your Raspberry Pi to auto startup? (dd HH:MM:SS, ?? as wildcard) ' when
@@ -123,7 +112,7 @@ schedule_shutdown()
   else
     echo -e "  Auto shutdown time is currently set to \"$off_time\b\b\b\"  "
   fi
-  if [ -f "$my_dir/schedule.wpi" ]; then
+  if [ -f "/etc/wittypi/schedules/schedule.wpi" ]; then
       echo '  [WARNING] Your manual schedule may disturb the schedule script running!'
   fi
   read -p '  When do you want your Raspberry Pi to auto shutdown? (dd HH:MM, ?? as wildcard) ' when
@@ -164,7 +153,7 @@ schedule_shutdown()
 
 choose_schedule_script()
 {
-  local files=($my_dir/schedules/*.wpi)
+  local files=(/etc/wittypi/schedules/*.wpi)
   local count=${#files[@]}
   echo "  I can see $count schedule scripts in the \"schedules\" directory:"
   for (( i=0; i<$count; i++ ));
@@ -175,9 +164,9 @@ choose_schedule_script()
   if [[ $index =~ [0-9]+ ]] && [ $(($index >= 1)) == '1' ] && [ $(($index <= $count)) == '1' ] ; then
     local script=${files[$((index-1))]};
     log "  Copying \"${script##*/}\" to \"schedule.wpi\"..."
-    cp ${script} "$my_dir/schedule.wpi"
+    cp ${script} "/etc/wittypi/schedules/schedule.wpi"
     log '  Running the script...'
-    . "$my_dir/runScript.sh" | tee -a "$my_dir/schedule.log"
+    . "/usr/bin/wittypi-runscript" | tee -a "/var/log/wittypi/schedule.log"
     log '  Done :-)'
   else
     echo "  \"$index\" is not a good choice, I need a number from 1 to $count"
@@ -284,7 +273,7 @@ set_vin_adjustment()
     if (( $(awk "BEGIN {print ($adj < 0)}") )); then
     	adj=$((128-$adj))
     fi
-    i2c_write 0x01 $I2C_MC_ADDRESS $I2C_CONF_ADJ_VIN ${adj%.*}  
+    i2c_write 0x01 $I2C_MC_ADDRESS $I2C_CONF_ADJ_VIN ${adj%.*}
     local setting=$(printf 'Vin adjustment set to %.2fV!\n' $vinAdj)
     log "$setting" && sleep 2
   else
@@ -300,7 +289,7 @@ set_vout_adjustment()
     if (( $(awk "BEGIN {print ($adj < 0)}") )); then
     	adj=$((128-$adj))
     fi
-    i2c_write 0x01 $I2C_MC_ADDRESS $I2C_CONF_ADJ_VOUT ${adj%.*}  
+    i2c_write 0x01 $I2C_MC_ADDRESS $I2C_CONF_ADJ_VOUT ${adj%.*}
     local setting=$(printf 'Vout adjustment set to %.2fV!\n' $voutAdj)
     log "$setting" && sleep 2
   else
@@ -316,7 +305,7 @@ set_iout_adjustment()
     if (( $(awk "BEGIN {print ($adj < 0)}") )); then
     	adj=$((128-$adj))
     fi
-    i2c_write 0x01 $I2C_MC_ADDRESS $I2C_CONF_ADJ_IOUT ${adj%.*}  
+    i2c_write 0x01 $I2C_MC_ADDRESS $I2C_CONF_ADJ_IOUT ${adj%.*}
     local setting=$(printf 'Iout adjustment set to %.2fA!\n' $ioutAdj)
     log "$setting" && sleep 2
   else
@@ -349,7 +338,7 @@ other_settings()
 	else
 	  pi=4
   fi
-  echo " [$pi Seconds]"  
+  echo " [$pi Seconds]"
   echo -n '  [4] White LED duration'
   local led=$(i2c_read 0x01 $I2C_MC_ADDRESS $I2C_CONF_BLINK_LED)
   printf ' [%d]\n' "$led"
@@ -411,8 +400,8 @@ reset_shutdown_time()
 delete_schedule_script()
 {
   log '  Deleting "schedule.wpi" file...' '-n'
-  if [ -f "$my_dir/schedule.wpi" ]; then
-    rm "$my_dir/schedule.wpi"
+  if [ -f "/etc/wittypi/schedules/schedule.wpi" ]; then
+    rm "/etc/wittypi/schedules/schedule.wpi"
     log ' done :-)'
   else
     log ' file does not exist'
@@ -479,7 +468,7 @@ while true; do
   rtctime='>>> Your RTC time is:    '
   rtctime+="$(get_rtc_time)"
   echo "$rtctime"
-  
+
   # voltages report
   if is_mc_connected ; then
     vin=$(get_input_voltage)
@@ -513,7 +502,7 @@ while true; do
     echo "  [$startup_time]";
   fi
   echo -n '  6. Choose schedule script'
-  if [ -f "$my_dir/schedule.wpi" ]; then
+  if [ -f "/etc/wittypi/schedules/schedule.wpi" ]; then
     echo ' [in use]'
   else
     echo ''

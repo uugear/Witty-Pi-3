@@ -1,0 +1,29 @@
+wittypi (0.0.5) unstable; urgency=medium
+
+  [Added]
+  * Press two seconds for a shutdown (Github User: 'ubidefeo')
+  [Changed]
+  [Deprecated]
+  [Removed]
+  [Fixed]
+  * Correct the value of the HALT-PIN for the added feature of uidefeo
+  * Valid duration value should be 0~254 (backport of original code)
+  * Installer works on Raspbian OS
+  [Security]
+
+ -- Lars Gremme <batpi@dein-linux.de>  Sun, 05 Dec 2021 18:47:00 +0100
+
+wittypi (0.0.4) unstable; urgency=medium
+
+  [Added]
+  * Add Rsyslogd-Configuration-File
+  [Changed]
+  * Change output of wittypi to syslog
+  * Rename the daemon to wittypi-daemon
+  * Change installationscript from usercfg.txt to syscfg.txt
+  [Deprecated]
+  [Removed]
+  [Fixed]
+  [Security]
+
+ -- Lars Gremme <batpi@dein-linux.de>  Wed, 23 May 2021 19:14:00 +0100

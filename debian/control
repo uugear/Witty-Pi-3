@@ -1,0 +1,16 @@
+Source: wittypi
+Maintainer: Lars Gremme <batpi@dein-linux.de>
+Section: libraries
+Priority: optional
+Build-Depends: debhelper (>=9.0.0),
+               dh-systemd (>= 1.5)
+Standards-Version: 4.0.0
+Homepage: <www.bat-pi.eu>
+
+Package: wittypi
+Architecture: armhf
+Depends: i2c-tools, wiringpi, bash
+Description: RTC and power management for Raspberry Pi; ON/OFF via Script
+ Witty Pi is the third generation of Witty Pi, which adds RTC and power
+ management to your Raspberry Pi, and can define complex ON/OFF sequence with
+ simple script.

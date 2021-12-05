@@ -1,0 +1,10 @@
+[Unit]
+Description=Witty Pi Daemon
+
+[Service]
+RemainAfterExit=true
+ExecStart=/usr/share/wittypi/wittypi-daemon
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
