@@ -70,7 +70,7 @@ case "$1" in
 
         echo '>>> Make sure en_GB.UTF-8 locale is installed'
         locale_commentout=$(sed -n 's/\(#\).*en_GB.UTF-8 UTF-8/1/p' /etc/locale.gen)
-        if [[ $locale_commentout -ne 1 ]]; then
+        if [[ ${locale_commentout} -ne 1 ]]; then
         	echo 'Seems en_GB.UTF-8 locale has been installed, skip this step.'
         else
         	sed -i.bak 's/^.*\(en_GB.UTF-8[[:blank:]]\+UTF-8\)/\1/' /etc/locale.gen
@@ -79,7 +79,11 @@ case "$1" in
 
         # Add global logfile
         touch /var/log/wittypi.log
-        chown syslog:adm /var/log/wittypi.log
+        if [ ${bootconfig} == "/boot/config.txt" ]; then
+            chown root:adm /var/log/wittypi.log
+        else
+            chown syslog:adm /var/log/wittypi.log
+        fi
         ;;
 esac
 
