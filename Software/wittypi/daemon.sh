@@ -10,15 +10,14 @@ cur_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # utilities
 . "$cur_dir/utilities.sh"
 
-log 'Witty Pi daemon (v3.13) is started.'
+# GPIO utilites
+. "$cur_dir/gpio-util.sh"
+
+log 'Witty Pi daemon (v3.50) is started.'
 
 # log Raspberry Pi model
 pi_model=$(cat /proc/device-tree/model)
 log "Running on $pi_model"
-
-# log wiringPi version number
-wp_ver=$(gpio -v | sed -n '1 s/.*\([0-9]\+\.[0-9]\+\).*/\1/p')
-log "Wiring Pi version: $wp_ver"
 
 # log NOOBS version, if exists
 if [[ ! -d "$cur_dir/tmp" ]]; then

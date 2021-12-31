@@ -15,25 +15,19 @@ echo '==========================================================================
 echo '|                                                                              |'
 echo '|   Witty Pi - Realtime Clock + Power Management for Raspberry Pi              |'
 echo '|                                                                              |'
-echo '|                   < Version 3.13 >     by UUGear s.r.o.                      |'
+echo '|            < Version 3.50 >     by Dun Cat B.V. (UUGear)                     |'
 echo '|                                                                              |'
 echo '================================================================================'
 
-# include utilities script in same directory
+# include utilities scripts in same directory
 my_dir="`dirname \"$0\"`"
 my_dir="`( cd \"$my_dir\" && pwd )`"
 if [ -z "$my_dir" ] ; then
   exit 1
 fi
 . $my_dir/utilities.sh
+. $my_dir/gpio-util.sh
 
-hash gpio 2>/dev/null
-if [ $? -ne 0 ]; then
-  echo ''
-  echo 'Seems your wiringPi is not installed properly (missing "gpio" command). Quitting...'
-  echo ''
-  exit
-fi
 
 if ! is_rtc_connected ; then
   echo ''
