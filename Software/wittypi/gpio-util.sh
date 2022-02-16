@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # file: gpio-util.sh
-# version: 0.70
+# version: 0.71
 # author: Dun Cat B.V.
 #
 # This file defines a BASH function named "gpio", which can be used like a 
@@ -174,7 +174,7 @@ gpio()
 
 doVersion()
 {
-  echo 'Emulated gpio version: 0.70'
+  echo 'Emulated gpio version: 0.71'
   echo 'Thank Gordon Henderson for the great work on WiringPi'
   echo 'Copyright (c) Dun Cat B.V. (UUGear)'
   echo 'This is free software with ABSOLUTELY NO WARRANTY.'
@@ -256,9 +256,10 @@ doWfi()
     pin=$2
   fi
   edge=$3
-  if ! hash python3 2>/dev/null; then
+  if ! python3 -c "import RPi.GPIO" > /dev/null 2>&1 ; then
+    echo 'Python 3 or RPi.GPIO for Python 3 is not installed, using less efficient implementation now.'
     local running=1
-	local prev=$(doRead '' $pin)
+    local prev=$(doRead '' $pin)
     while [[ $running -eq 1 ]]; do
 	  local cur=$(doRead '' $pin)
 	  if [[ ($edge == 'both' && $prev -ne $cur) 
