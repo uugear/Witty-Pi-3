@@ -58,7 +58,15 @@ miniuart=$(echo -e "$miniuart" | sed -e 's/^[[:space:]]*//')
 if [[ -z "$miniuart" || "$miniuart" == "#"* ]]; then
   echo 'dtoverlay=pi3-miniuart-bt' >> /boot/config.txt
 else
-  echo 'Seems setting Pi3/4 Bluetooth to use mini-UART is done already, skip this step.'
+  echo 'Seems setting Pi3 Bluetooth to use mini-UART is done already, skip this step.'
+fi
+
+miniuart=$(grep 'dtoverlay=miniuart-bt' /boot/config.txt)
+miniuart=$(echo -e "$miniuart" | sed -e 's/^[[:space:]]*//')
+if [[ -z "$miniuart" || "$miniuart" == "#"* ]]; then
+  echo 'dtoverlay=miniuart-bt' >> /boot/config.txt
+else
+  echo 'Seems setting Bluetooth to use mini-UART is done already, skip this step.'
 fi
 
 core_freq=$(grep 'core_freq=250' /boot/config.txt)
