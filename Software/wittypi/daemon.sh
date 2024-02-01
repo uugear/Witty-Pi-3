@@ -151,10 +151,34 @@ while true; do
       clear_alarm_flags
     else
     	# not shutdown by alarm
+      # wait for button to be pressed for SHUTDOWN_HOLD_TIME to prevent single accidental button shutdown
+      # by default this is set to 2 seconds, can be changed in utilities.sh
+      counter=0
+      while [ $counter -lt $SHUTDOWN_HOLD_TIME ]; do  # increase this value if it needs more time
+        if [ $(gpio -g read $HALT_PIN) == '1' ] ; then
+          counter=$(($counter+1))
+        else
+          counter=0
+          continue 2
+        fi
+        sleep 1
+      done
       break;
     fi
   else
     # power switch can still work without RTC
+    # wait for button to be pressed for SHUTDOWN_HOLD_TIME to prevent single accidental button shutdown
+    # by default this is set to 2 seconds, can be changed in utilities.sh
+    counter=0
+    while [ $counter -lt $SHUTDOWN_HOLD_TIME ]; do  # increase this value if it needs more time
+      if [ $(gpio -g read $HALT_PIN) == '1' ] ; then
+        counter=$(($counter+1))
+      else
+        counter=0
+        continue 2
+      fi
+      sleep 1
+    done
     break;
   fi
 done
